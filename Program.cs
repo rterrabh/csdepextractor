@@ -1,58 +1,46 @@
 using System;
-using System.Reflection;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Dependencies;
 class DepCSharp
 {
+
+    static List<string> ExtractCSFiles(string sDir){
+        List<string> csFiles = new List<string>();
+        try{
+            foreach (string f in Directory.GetFiles(sDir)){
+                if(Path.GetExtension(f) == ".cs"){
+                    csFiles.Add(f);
+                }
+            }
+            foreach (string d in Directory.GetDirectories(sDir)){
+                csFiles = csFiles.Concat(ExtractCSFiles(d)).ToList();
+            }
+        }catch (System.Exception excpt){
+            Console.WriteLine(excpt.Message);
+        }
+        return csFiles;
+    }
+
     static void Main(string[] args)
     {
-        SyntaxTree tree = CSharpSyntaxTree.ParseText(
-@"using System;
- 
-namespace HelloWorld.Hello
-{
-    class ClassA{
-        public void test(){
-           ClassB x =  new ClassB();
-           x.retornaClassC().retornaString();
-        }
-    }
- 
-}");
 
-    SyntaxTree tree2 = CSharpSyntaxTree.ParseText(
-@"using System;
- 
-namespace HelloWorld.Hello
-{
-    class ClassB{
-        public ClassC retornaClassC(){
-            return new ClassC();
+        string path = "/home/elderjr/Documents/git_repositories/msdclcheck/toyexample/MsAuthenticate";
+        Console.WriteLine("Extracting cs files from {0}", path);
+        List<string> csFiles = ExtractCSFiles(path);
+        List<SyntaxTree> trees = new List<SyntaxTree>();
+        Console.WriteLine("Extracting trees of cs files");
+        foreach(var f in csFiles){
+            trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(f)));
         }
+        Console.WriteLine("Extracting dependencies");
+        HashSet<Dependency> dependencies = DepExtractor.getInstance().start(trees);
     }
-
-    class ClassC{
-        public string retornaString(){
-            ClassB x = new ClassB();
-            return ""str"";
-        } 
-    }
-}");
-    SyntaxTree[] trees = new SyntaxTree[2];
-    trees[0] = tree;
-    trees[1] = tree2;
-        var compilation = CSharpCompilation.Create("Project")
-                .AddReferences(MetadataReference.CreateFromFile(
-                    typeof(object).GetTypeInfo().Assembly.Location))
-                .AddSyntaxTrees(trees);
-        var semanticModel = compilation.GetSemanticModel(tree);
-        DepExtractor dep = new DepExtractor(trees);
-        dep.start();
-    }
+    
 }
