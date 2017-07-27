@@ -24,7 +24,7 @@ namespace Dependencies{
             return DepExtractor.instance;
         }
         
-        public HashSet<Dependency> start(ICollection<SyntaxTree> trees){
+        public HashSet<Dependency> extract(ICollection<SyntaxTree> trees){
             Compilation comp = compile(trees);
             this.dependencies = new HashSet<Dependency>();
             foreach(var tree in trees){
@@ -44,15 +44,24 @@ namespace Dependencies{
 
         private void addDependency(string origin, string type, string destin){
             if(destin != "void" && destin != "?"){
-                Console.WriteLine(origin+","+type+","+destin);
+                //Console.WriteLine(origin+","+type+","+destin);
                 this.dependencies.Add(new Dependency(origin, type, destin));
             }
         }
 
-        
-
         public override void VisitClassDeclaration(ClassDeclarationSyntax node){
             this.currentClass = this.semanticModel.GetDeclaredSymbol(node).ToString();
+            if(node.BaseList != null){
+                var baseType = this.semanticModel.GetDeclaredSymbol(node).BaseType.ToString();
+                foreach(var inheritance in node.BaseList.Types){
+                    var inheritanceType = this.semanticModel.GetTypeInfo(inheritance.Type).Type.ToString();
+                    if(inheritanceType != baseType){
+                        addDependency(this.currentClass, Dependency.IMPLEMENT, inheritanceType);
+                    }else{
+                        addDependency(this.currentClass, Dependency.EXTEND, inheritanceType);
+                    }
+                }
+            }
             base.VisitClassDeclaration(node);
         }
 

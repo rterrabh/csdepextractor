@@ -31,7 +31,8 @@ class DepCSharp
     static void Main(string[] args)
     {
 
-        string path = "/home/elderjr/Documents/git_repositories/msdclcheck/toyexample/MsAuthenticate";
+        //string path = "/home/elderjr/Documents/git_repositories/msdclcheck/toyexample/MsAuthenticate";
+        string path = "/home/elderjr/Documents/visual_code_workspace/csdepextractor/TargetExample";
         Console.WriteLine("Extracting cs files from {0}", path);
         List<string> csFiles = ExtractCSFiles(path);
         List<SyntaxTree> trees = new List<SyntaxTree>();
@@ -40,7 +41,10 @@ class DepCSharp
             trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(f)));
         }
         Console.WriteLine("Extracting dependencies");
-        HashSet<Dependency> dependencies = DepExtractor.getInstance().start(trees);
+        HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(trees);
+        foreach(var dep in dependencies){
+            Console.WriteLine(dep);
+        }
     }
     
 }

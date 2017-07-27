@@ -34,5 +34,9 @@ namespace Dependencies{
             }
             return false;
         }
+
+        public override string ToString(){
+            return this.origin + "," + this.type + "," + this.destin;
+        }
     }
 }
