@@ -1,12 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Dependencies;
 class DepCSharp
 {
@@ -28,23 +24,21 @@ class DepCSharp
         return csFiles;
     }
 
-    static void Main(string[] args)
-    {
-
-        //string path = "/home/elderjr/Documents/git_repositories/msdclcheck/toyexample/MsAuthenticate";
-        string path = "/home/elderjr/Documents/visual_code_workspace/csdepextractor/TargetExample";
+    static void Main(string[] args){
+        string path;
+        if(args.Length > 0){
+            path = args[0];
+        }else{
+            path = Directory.GetCurrentDirectory();
+            Console.WriteLine("No path given, using {0}", path);
+        }
         Console.WriteLine("Extracting cs files from {0}", path);
         List<string> csFiles = ExtractCSFiles(path);
-        List<SyntaxTree> trees = new List<SyntaxTree>();
-        Console.WriteLine("Extracting trees of cs files");
-        foreach(var f in csFiles){
-            trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(f)));
-        }
-        Console.WriteLine("Extracting dependencies");
-        HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(trees);
+        HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(csFiles);
         foreach(var dep in dependencies){
             Console.WriteLine(dep);
         }
+        Console.WriteLine("Done");
     }
     
 }

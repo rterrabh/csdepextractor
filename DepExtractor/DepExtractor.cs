@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 
 namespace Dependencies{
     class DepExtractor : CSharpSyntaxWalker{
@@ -24,15 +26,27 @@ namespace Dependencies{
             return DepExtractor.instance;
         }
         
-        public HashSet<Dependency> extract(ICollection<SyntaxTree> trees){
+        public HashSet<Dependency> extract(ICollection<string> pathes){
+            Console.WriteLine("Extracting trees of cs files");
+            List<SyntaxTree> trees = extractTreesFromPathes(pathes);
+            Console.WriteLine("Compiling trees");
             Compilation comp = compile(trees);
             this.dependencies = new HashSet<Dependency>();
+            Console.WriteLine("Extracting dependencies");
             foreach(var tree in trees){
                 var root = (CompilationUnitSyntax) tree.GetRoot();
                 this.semanticModel = comp.GetSemanticModel(tree);
                 Visit(root);
             }
             return this.dependencies;
+        }
+
+        private List<SyntaxTree> extractTreesFromPathes(ICollection<string> pathes){
+            List<SyntaxTree> trees = new List<SyntaxTree>();
+            foreach(var path in pathes){
+                trees.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(path)));
+            }
+            return trees;
         }
 
         private Compilation compile(ICollection<SyntaxTree> trees){
@@ -49,6 +63,14 @@ namespace Dependencies{
             }
         }
 
+        public void extractAnnotations(SyntaxList<AttributeListSyntax> attributes){
+            foreach(var attributeList in attributes){
+                foreach(var annotation in attributeList.Attributes){
+                    addDependency(this.currentClass,Dependency.USE_ANNOTATION, annotation.Name.ToString());
+                }
+            }
+        }
+
         public override void VisitClassDeclaration(ClassDeclarationSyntax node){
             this.currentClass = this.semanticModel.GetDeclaredSymbol(node).ToString();
             if(node.BaseList != null){
@@ -62,19 +84,24 @@ namespace Dependencies{
                     }
                 }
             }
+            this.extractAnnotations(node.AttributeLists);
             base.VisitClassDeclaration(node);
         }
-
-
+    
         //declare dependencies
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node){
             var returnType = this.semanticModel.GetTypeInfo(node.ReturnType).Type;
             if(returnType != null){
                 addDependency(this.currentClass, Dependency.DECLARE, returnType.ToString());
             }
+            this.extractAnnotations(node.AttributeLists);
             base.VisitMethodDeclaration(node);
         }
 
+        public override void VisitFieldDeclaration(FieldDeclarationSyntax node){
+            this.extractAnnotations(node.AttributeLists);
+            base.VisitFieldDeclaration(node);
+        }
         public override void VisitVariableDeclaration(VariableDeclarationSyntax node){
             var variableType = this.semanticModel.GetTypeInfo(node.Type).Type;
             if(variableType != null){
@@ -88,6 +115,7 @@ namespace Dependencies{
             if(parameterType != null){
                 addDependency(this.currentClass, Dependency.DECLARE, parameterType.ToString());
             }
+            this.extractAnnotations(node.AttributeLists);
             base.VisitParameter(node);
         }
 

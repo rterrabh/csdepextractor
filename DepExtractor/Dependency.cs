@@ -36,7 +36,7 @@ namespace Dependencies{
         }
 
         public override string ToString(){
-            return this.origin + "," + this.type + "," + this.destin;
+            return this.origin + ", " + this.type + ", " + this.destin;
         }
     }
 }
