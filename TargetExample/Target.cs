@@ -1,6 +1,7 @@
 using System;
 
 namespace Target{
+    /*
     abstract class ClassA{
         public string test(){
             try{
@@ -32,5 +33,31 @@ namespace Target{
     }
     class ClassC : ClassB{
         
+    }
+     */
+    class Test{
+        private string name;
+        public string Name {get{return name;}}
+        
+        public string test(){
+            try{
+                Console.WriteLine("bla");
+            }catch(Exception ex){
+                Console.WriteLine(ex.Message);
+            }
+            return "bla";
+        }
+
+    }
+
+    class TestB{
+        public void foo(string a){
+
+        }
+        public bool test(){
+            var t = new Test();
+            //foo(t.test());
+            return t.Name == "dads";
+        }
     }
 }

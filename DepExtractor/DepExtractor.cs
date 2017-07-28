@@ -61,8 +61,7 @@ namespace Dependencies{
                 //Console.WriteLine(origin+","+type+","+destin);
                 this.dependencies.Add(new Dependency(origin, type, destin));
             }
-        }
-
+        }        
         public void extractAnnotations(SyntaxList<AttributeListSyntax> attributes){
             foreach(var attributeList in attributes){
                 foreach(var annotation in attributeList.Attributes){
@@ -102,6 +101,7 @@ namespace Dependencies{
             this.extractAnnotations(node.AttributeLists);
             base.VisitFieldDeclaration(node);
         }
+
         public override void VisitVariableDeclaration(VariableDeclarationSyntax node){
             var variableType = this.semanticModel.GetTypeInfo(node.Type).Type;
             if(variableType != null){
@@ -124,28 +124,38 @@ namespace Dependencies{
             if(exceptionType != null){
                 addDependency(this.currentClass, Dependency.DECLARE, exceptionType.ToString());
             }
+            base.VisitCatchDeclaration(node);
         }
 
         //create dependencies
         public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node){
-            var symbolInfo = this.semanticModel.GetSymbolInfo(node.Type).Symbol;
-            if(symbolInfo != null){
-                addDependency(this.currentClass, Dependency.CREATE, symbolInfo.ToString());
+            var typeInfo = this.semanticModel.GetTypeInfo(node).Type;
+            if(typeInfo != null){
+                addDependency(this.currentClass, Dependency.CREATE, typeInfo.ToString());
             }
+            base.VisitObjectCreationExpression(node);
         }
-                
+
         //access dependencies                
+
+        public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node){
+            var callerType = this.semanticModel.GetTypeInfo(node.Expression).Type;
+            if(callerType != null){
+                addDependency(this.currentClass, Dependency.ACCESS, callerType.ToString());
+            }
+            base.VisitMemberAccessExpression(node);
+        }
+
         public override void VisitInvocationExpression(InvocationExpressionSyntax node){
-            var memberAccess = node.Expression as MemberAccessExpressionSyntax;
-            if(memberAccess != null){
-                var callerType = this.semanticModel.GetTypeInfo(memberAccess.Expression).Type;
-                if(callerType != null){
-                    addDependency(this.currentClass, Dependency.ACCESS, callerType.ToString());
+            foreach(var argument in node.ArgumentList.Arguments){
+                var argumentType = this.semanticModel.GetTypeInfo(argument.Expression).Type;
+                if(argumentType != null){
+                    addDependency(this.currentClass, Dependency.DECLARE, argumentType.ToString());
                 }
             }
             base.VisitInvocationExpression(node);
         }
-
+        
         //throw dependencies
         public override void VisitThrowStatement(ThrowStatementSyntax node){
             var throwType = this.semanticModel.GetTypeInfo(node.Expression).Type;

@@ -25,19 +25,19 @@ class DepCSharp
     }
 
     static void Main(string[] args){
-        string path;
+        string path, dependenciesPath;
         if(args.Length > 0){
             path = args[0];
         }else{
             path = Directory.GetCurrentDirectory();
             Console.WriteLine("No path given, using {0}", path);
         }
+        dependenciesPath = path + "/dependencies.txt";
         Console.WriteLine("Extracting cs files from {0}", path);
         List<string> csFiles = ExtractCSFiles(path);
         HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(csFiles);
-        foreach(var dep in dependencies){
-            Console.WriteLine(dep);
-        }
+        Console.WriteLine("Saving dependencies.txt in {0}", dependenciesPath);
+        Dependencies.IO.SaveDependencies(dependencies, dependenciesPath);
         Console.WriteLine("Done");
     }
     
