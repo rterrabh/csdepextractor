@@ -25,20 +25,42 @@ class DepCSharp
     }
 
     static void Main(string[] args){
-        string path, dependenciesPath;
-        if(args.Length > 0){
-            path = args[0];
+        string path = null, dependenciesPath;
+        bool showDependencies = false, save = true;
+        if(args.Length == 1 && args[0] == "-help"){
+            Console.WriteLine("----- CCharp Dependencies Extractor ----");
+            Console.WriteLine("   --path: indicates the path to analyse (default is the current path)");
+            Console.WriteLine("   --not_save: indicates for not save dependencies found");
+            Console.WriteLine("   --show_dependencies: show dependencies found in terminal");
+            Console.WriteLine("   -help: show help");
         }else{
-            path = Directory.GetCurrentDirectory();
-            Console.WriteLine("No path given, using {0}", path);
+            for(int i = 0; i < args.Length; i++){
+                if(args[i] == "--path" && (i+1) < args.Length){
+                    path = args[i + 1];
+                }else if(args[i] == "--show_dependencies"){
+                    showDependencies = true;
+                }else if(args[i] == "--not_save"){
+                    save = false;
+                }
+            }
+            if(path == null){
+                path = Directory.GetCurrentDirectory();
+                Console.WriteLine("No path given, using {0}", path);
+            }
+            dependenciesPath = path + "/dependencies.txt";
+            Console.WriteLine("Extracting cs files from {0}", path);
+            List<string> csFiles = ExtractCSFiles(path);
+            HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(csFiles);
+            if(showDependencies){
+                foreach(var dep in dependencies){
+                    Console.WriteLine(dep);
+                }
+            }
+            if(save){
+                Console.WriteLine("Saving dependencies.txt in {0}", dependenciesPath);
+                Dependencies.IO.SaveDependencies(dependencies, dependenciesPath);
+            }
+                Console.WriteLine("Done");
         }
-        dependenciesPath = path + "/dependencies.txt";
-        Console.WriteLine("Extracting cs files from {0}", path);
-        List<string> csFiles = ExtractCSFiles(path);
-        HashSet<Dependency> dependencies = DepExtractor.getInstance().extract(csFiles);
-        Console.WriteLine("Saving dependencies.txt in {0}", dependenciesPath);
-        Dependencies.IO.SaveDependencies(dependencies, dependenciesPath);
-        Console.WriteLine("Done");
     }
-    
 }
